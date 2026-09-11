@@ -4,7 +4,7 @@
   "description": "From Local Problems to Real Solutions. Report community issues directly to universities and government.",
   "icons": [
     {
-      "src": "/vite.svg",
+      "src": "/favicon.svg",
       "type": "image/svg+xml",
       "sizes": "192x192 512x512"
     }
