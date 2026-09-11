@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { JHARKHAND_DISTRICTS, CHALLENGE_CATEGORIES } from '@/lib/constants';
 import { challengesService } from '@/lib/supabase/challengesService';
+import { demoEngine } from '@/lib/demo/demoEngine';
 import { aiService, AIAnalysisResponse } from '@/lib/supabase/aiService';
 import { Priority, AIAnalysis } from '@/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -160,11 +161,30 @@ export const CitizenReportForm: React.FC = () => {
       }, 1200);
     } catch (err: any) {
       console.warn('Submission fallback triggered:', err);
-      // Fallback ID so the citizen experience is always uninterrupted
+      // Fallback ID so the citizen experience is always uninterrupted and persistent
       const fallbackId = `ch-${Date.now()}`;
+      demoEngine.addChallenge({
+        id: fallbackId,
+        title,
+        description,
+        category,
+        subcategory,
+        district,
+        village,
+        peopleAffected,
+        urgency,
+        status: 'submitted',
+        citizenId: currentUser?.id || 'demo-citizen-1',
+        citizenName: currentUser?.displayName || 'Rahul Mahto',
+        photos: [],
+        documents: [],
+        priority: urgency,
+        submittedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
       setCreatedId(fallbackId);
       setTimeout(() => {
-        navigate(`/citizen/challenges`);
+        navigate(`/citizen/challenges/${fallbackId}`);
       }, 1200);
     }
   };

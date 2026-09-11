@@ -45,7 +45,7 @@ export const challengesService = {
 
         const { data, error } = await query;
         if (!error && data) {
-          return (data || []).map((row: any) => ({
+          const supabaseChallenges = (data || []).map((row: any) => ({
             id: row.id,
             title: row.title,
             description: row.description,
@@ -83,9 +83,15 @@ export const challengesService = {
             submittedAt: row.created_at,
             updatedAt: row.updated_at,
           }));
+
+          const localChallenges = demoEngine.getChallenges();
+          const map = new Map<string, Challenge>();
+          for (const c of supabaseChallenges) map.set(c.id, c);
+          for (const c of localChallenges) if (!map.has(c.id)) map.set(c.id, c);
+          return Array.from(map.values());
         }
       } catch (err) {
-        console.warn('Supabase getChallenges error, using demoEngine fallback:', err);
+        console.warn('Supabase getChallenges error, using local civic fallback:', err);
       }
     }
 
@@ -274,6 +280,35 @@ export const challengesService = {
           } catch (auditErr) {
             console.warn('Audit log insert warning:', auditErr);
           }
+
+          // 5. Store in persistent local civic store as well
+          const createdChallenge: Challenge = {
+            id: challengeId,
+            title: challengeData.title,
+            description: challengeData.description,
+            category: challengeData.category,
+            subcategory: challengeData.subcategory,
+            district: challengeData.district,
+            village: challengeData.village,
+            location: (challengeData.latitude && challengeData.longitude) ? {
+              lat: challengeData.latitude,
+              lng: challengeData.longitude,
+              address: challengeData.locationText || `${challengeData.village ? challengeData.village + ', ' : ''}${challengeData.district}`,
+            } : undefined,
+            peopleAffected: challengeData.peopleAffected,
+            urgency: challengeData.urgency,
+            currentSituation: challengeData.currentSituation,
+            expectedImprovement: challengeData.expectedImprovement,
+            status: 'submitted',
+            citizenId: challengeData.citizenId,
+            citizenName: 'Rahul Mahto',
+            photos: [],
+            documents: [],
+            priority: challengeData.urgency,
+            submittedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          demoEngine.addChallenge(createdChallenge);
 
           return challengeId;
         }

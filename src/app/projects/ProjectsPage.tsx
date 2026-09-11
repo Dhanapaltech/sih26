@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { EmptyState } from '@/components/common/EmptyState';
-import { FolderKanban, Search, ArrowRight, Loader2 } from 'lucide-react';
+import { FolderKanban, Search, ArrowRight, Loader2, Plus } from 'lucide-react';
+import { SubmitProjectModal } from '@/components/projects/SubmitProjectModal';
 
 export const ProjectsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ export const ProjectsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [isSubmitOpen, setIsSubmitOpen] = useState(false);
 
   const loadProjects = async () => {
     setIsLoading(true);
@@ -33,6 +35,12 @@ export const ProjectsPage: React.FC = () => {
 
   useEffect(() => {
     loadProjects();
+
+    const handleProjectCreated = () => {
+      loadProjects();
+    };
+    window.addEventListener('jh_project_created', handleProjectCreated);
+    return () => window.removeEventListener('jh_project_created', handleProjectCreated);
   }, [filter, search]);
 
   return (
@@ -46,7 +54,20 @@ export const ProjectsPage: React.FC = () => {
             Multi-disciplinary engineering ventures solving verified rural challenges across Jharkhand.
           </p>
         </div>
+        <Button
+          size="sm"
+          onClick={() => setIsSubmitOpen(true)}
+          className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs gap-1.5 cursor-pointer self-start sm:self-auto shadow-xs"
+        >
+          <Plus className="w-4 h-4" /> Submit Innovation Project
+        </Button>
       </div>
+
+      <SubmitProjectModal
+        isOpen={isSubmitOpen}
+        onClose={() => setIsSubmitOpen(false)}
+        onProjectCreated={() => loadProjects()}
+      />
 
       {/* Filter and Search Bar */}
       <Card className="border-slate-200 dark:border-slate-800">

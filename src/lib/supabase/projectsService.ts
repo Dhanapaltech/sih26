@@ -29,7 +29,7 @@ export const projectsService = {
 
         const { data, error } = await query;
         if (!error && data) {
-          return (data || []).map((row: any) => ({
+          const supabaseProjects = (data || []).map((row: any) => ({
             id: row.id,
             title: row.title,
             challengeId: row.challenge_id,
@@ -57,9 +57,16 @@ export const projectsService = {
             createdAt: row.created_at,
             updatedAt: row.updated_at,
           }));
+
+          // Merge locally stored real projects if any
+          const localProjects = demoEngine.getProjects();
+          const map = new Map<string, Project>();
+          for (const p of supabaseProjects) map.set(p.id, p);
+          for (const p of localProjects) if (!map.has(p.id)) map.set(p.id, p);
+          return Array.from(map.values());
         }
       } catch (err) {
-        console.warn('Supabase getProjects error, using demoEngine fallback:', err);
+        console.warn('Supabase getProjects error, using local fallback:', err);
       }
     }
 
@@ -71,14 +78,110 @@ export const projectsService = {
       list = list.filter((p) => p.universityId === filters.universityId);
     }
     if (filters.search && filters.search.trim()) {
-      const q = filters.search.toLowerCase().trim();
-      list = list.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          (p.description && p.description.toLowerCase().includes(q))
-      );
+      const q = filters.search.trim().toLowerCase();
+      list = list.filter((p) => p.title.toLowerCase().includes(q) || (p.description && p.description.toLowerCase().includes(q)));
     }
     return list;
+  },
+
+  async createProject(projectData: {
+    title: string;
+    description?: string;
+    challengeId?: string;
+    universityId?: string;
+    facultyId?: string;
+    status?: Project['status'];
+    district?: string;
+    budget?: { estimated: number; allocated: number; spent: number; currency: string };
+    targetDate?: string;
+    tags?: string[];
+  }): Promise<Project> {
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await (supabase.from('projects') as any)
+          .insert({
+            title: projectData.title,
+            description: projectData.description,
+            challenge_id: projectData.challengeId,
+            university_id: projectData.universityId,
+            faculty_id: projectData.facultyId,
+            status: projectData.status || 'planning',
+            district: projectData.district || 'Ranchi',
+            budget: projectData.budget || { estimated: 500000, allocated: 300000, spent: 0, currency: 'INR' },
+            target_date: projectData.targetDate,
+            tags: projectData.tags || [],
+          })
+          .select()
+          .single();
+
+        if (!error && data) {
+          const newProj: Project = {
+            id: data.id,
+            title: data.title,
+            challengeId: data.challenge_id,
+            universityId: data.university_id,
+            facultyId: data.faculty_id,
+            status: data.status,
+            progress: Number(data.progress) || 0,
+            health: 'good',
+            risk: 'low',
+            delayProbability: 0.05,
+            collaborationScore: 9.0,
+            impactPotential: 'high',
+            description: data.description,
+            timeline: {
+              startDate: data.start_date || new Date().toISOString(),
+              expectedEndDate: data.target_date || new Date().toISOString(),
+            },
+            budget: data.budget || { estimated: 0, allocated: 0, spent: 0, currency: 'INR' },
+            district: data.district,
+            tags: data.tags || [],
+            createdAt: data.created_at,
+            updatedAt: data.updated_at,
+          };
+          demoEngine.addProject(newProj);
+          return newProj;
+        }
+      } catch (err) {
+        console.warn('Supabase createProject error, persisting locally:', err);
+      }
+    }
+
+    // Local / Offline fallback project creation
+    const newProj: Project = {
+      id: `prj-${Date.now()}`,
+      title: projectData.title,
+      description: projectData.description,
+      challengeId: projectData.challengeId,
+      universityId: projectData.universityId || '11111111-1111-1111-1111-111111111101',
+      facultyId: projectData.facultyId || '00000000-0000-0000-0000-000000000002',
+      status: projectData.status || 'planning',
+      progress: 5,
+      health: 'good',
+      risk: 'low',
+      delayProbability: 0.05,
+      collaborationScore: 9.0,
+      impactPotential: 'high',
+      timeline: {
+        startDate: new Date().toISOString(),
+        expectedEndDate: projectData.targetDate || new Date(Date.now() + 180 * 86400000).toISOString(),
+      },
+      budget: projectData.budget || { estimated: 500000, allocated: 300000, spent: 25000, currency: 'INR' },
+      district: projectData.district || 'Ranchi',
+      tags: projectData.tags || ['Innovation', 'Rural Solutions'],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    demoEngine.addProject(newProj);
+
+    if (projectData.challengeId) {
+      demoEngine.updateChallengeStatus(projectData.challengeId, 'project_created', {
+        projectId: newProj.id,
+      });
+    }
+
+    return newProj;
   },
 
   async getProjectById(id: string): Promise<Project | null> {

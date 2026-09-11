@@ -24,6 +24,7 @@ import { formatDate } from '@/lib/utils';
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/supabaseClient';
 import { DEMO_UNIVERSITIES } from '@/lib/demo/demoData';
+import { SubmitProjectModal } from '@/components/projects/SubmitProjectModal';
 
 export const ChallengeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +36,7 @@ export const ChallengeDetail: React.FC = () => {
   const [selectedUniv, setSelectedUniv] = useState('');
   const [govNotes, setGovNotes] = useState('');
   const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
 
   // Load universities with demo fallback
   useEffect(() => {
@@ -274,9 +276,23 @@ export const ChallengeDetail: React.FC = () => {
             >
               <School className="w-3.5 h-3.5 text-blue-600" /> Confirm University Assignment
             </Button>
+
+            <Button
+              onClick={() => setIsProjectModalOpen(true)}
+              size="sm"
+              className="bg-purple-700 hover:bg-purple-800 text-white text-xs gap-1.5 cursor-pointer shadow-xs ml-auto"
+            >
+              <FolderPlus className="w-3.5 h-3.5" /> Submit / Launch Innovation Project
+            </Button>
           </div>
         </CardContent>
       </Card>
+
+      <SubmitProjectModal
+        isOpen={isProjectModalOpen}
+        onClose={() => setIsProjectModalOpen(false)}
+        initialChallengeId={challenge.id}
+      />
     </div>
   );
 };

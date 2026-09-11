@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { PriorityBadge } from '@/components/common/PriorityBadge';
 import { EmptyState } from '@/components/common/EmptyState';
-import { Sparkles, Eye, Loader2 } from 'lucide-react';
+import { Sparkles, Eye, Loader2, FolderPlus, Plus } from 'lucide-react';
+import { SubmitProjectModal } from '@/components/projects/SubmitProjectModal';
 
 export const UniversityDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -17,24 +18,40 @@ export const UniversityDashboard: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeTab, setActiveTab] = useState<'all' | 'submitted' | 'validated'>('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [selectedChallengeForProject, setSelectedChallengeForProject] = useState<string>('');
+
+  async function loadUnivData() {
+    setIsLoading(true);
+    try {
+      const [allChs, allProjs] = await Promise.all([
+        challengesService.getChallenges(),
+        projectsService.getProjects(),
+      ]);
+      setChallenges(allChs);
+      setProjects(allProjs);
+    } catch (err) {
+      console.warn('Error loading university dashboard data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   useEffect(() => {
-    async function loadUnivData() {
-      setIsLoading(true);
-      try {
-        const [allChs, allProjs] = await Promise.all([
-          challengesService.getChallenges(),
-          projectsService.getProjects(),
-        ]);
-        setChallenges(allChs);
-        setProjects(allProjs);
-      } catch (err) {
-        console.warn('Error loading university dashboard data:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    }
     loadUnivData();
+
+    const handleChallengeSync = () => loadUnivData();
+    const handleProjectSync = () => loadUnivData();
+
+    window.addEventListener('jh_challenge_created', handleChallengeSync);
+    window.addEventListener('jh_challenge_updated', handleChallengeSync);
+    window.addEventListener('jh_project_created', handleProjectSync);
+
+    return () => {
+      window.removeEventListener('jh_challenge_created', handleChallengeSync);
+      window.removeEventListener('jh_challenge_updated', handleChallengeSync);
+      window.removeEventListener('jh_project_created', handleProjectSync);
+    };
   }, []);
 
   const filteredChallenges = challenges.filter((c) => {
@@ -60,6 +77,16 @@ export const UniversityDashboard: React.FC = () => {
             Academic R&D Coordination: Review citizen-reported problems, assign departments, approve student teams, and monitor progress.
           </p>
         </div>
+        <Button
+          size="sm"
+          onClick={() => {
+            setSelectedChallengeForProject('');
+            setIsProjectModalOpen(true);
+          }}
+          className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs gap-1.5 cursor-pointer self-start sm:self-auto shadow-xs"
+        >
+          <Plus className="w-4 h-4" /> Submit Innovation Project
+        </Button>
       </div>
 
       {/* Stats Row */}
@@ -168,7 +195,18 @@ export const UniversityDashboard: React.FC = () => {
                     <td className="py-3 px-4"><Badge variant="outline" className="text-[10px]">{c.category}</Badge></td>
                     <td className="py-3 px-4"><PriorityBadge priority={c.priority || 'medium'} /></td>
                     <td className="py-3 px-4"><StatusBadge status={c.status} /></td>
-                    <td className="py-3 px-4 text-right">
+                    <td className="py-3 px-4 text-right flex items-center justify-end gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-[11px] px-2 gap-1 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800 hover:bg-purple-50 cursor-pointer"
+                        onClick={() => {
+                          setSelectedChallengeForProject(c.id);
+                          setIsProjectModalOpen(true);
+                        }}
+                      >
+                        <FolderPlus className="w-3 h-3" /> Submit Project
+                      </Button>
                       <Button size="sm" variant="ghost" className="h-7 text-xs px-2 cursor-pointer" onClick={() => navigate(`/app/challenges/${c.id}`)}>
                         <Eye className="w-3.5 h-3.5" />
                       </Button>
@@ -180,6 +218,13 @@ export const UniversityDashboard: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      <SubmitProjectModal
+        isOpen={isProjectModalOpen}
+        onClose={() => setIsProjectModalOpen(false)}
+        initialChallengeId={selectedChallengeForProject}
+        onProjectCreated={() => loadUnivData()}
+      />
     </div>
   );
 };

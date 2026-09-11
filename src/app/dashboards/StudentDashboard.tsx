@@ -10,7 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { PriorityBadge } from '@/components/common/PriorityBadge';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { EmptyState } from '@/components/common/EmptyState';
-import { FolderKanban, ArrowRight, Loader2, Sparkles, Lightbulb } from 'lucide-react';
+import { FolderKanban, ArrowRight, Loader2, Sparkles, Lightbulb, Plus, FolderPlus } from 'lucide-react';
+import { SubmitProjectModal } from '@/components/projects/SubmitProjectModal';
 
 export const StudentDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -19,30 +20,46 @@ export const StudentDashboard: React.FC = () => {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [selectedChallengeForProject, setSelectedChallengeForProject] = useState<string>('');
+
+  async function loadStudentData() {
+    setIsLoading(true);
+    try {
+      const [projs, chs] = await Promise.all([
+        projectsService.getProjects(),
+        challengesService.getChallenges(),
+      ]);
+      setProjects(projs);
+      setChallenges(chs);
+      if (projs.length > 0) {
+        const tList = await projectsService.getTasks(projs[0].id);
+        setTasks(tList);
+      } else {
+        setTasks([]);
+      }
+    } catch (err) {
+      console.warn('Student dashboard error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   useEffect(() => {
-    async function loadStudentData() {
-      setIsLoading(true);
-      try {
-        const [projs, chs] = await Promise.all([
-          projectsService.getProjects(),
-          challengesService.getChallenges(),
-        ]);
-        setProjects(projs);
-        setChallenges(chs);
-        if (projs.length > 0) {
-          const tList = await projectsService.getTasks(projs[0].id);
-          setTasks(tList);
-        } else {
-          setTasks([]);
-        }
-      } catch (err) {
-        console.warn('Student dashboard error:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    }
     loadStudentData();
+
+    const handleChallengeSync = () => loadStudentData();
+    const handleProjectSync = () => loadStudentData();
+
+    window.addEventListener('jh_challenge_created', handleChallengeSync);
+    window.addEventListener('jh_challenge_updated', handleChallengeSync);
+    window.addEventListener('jh_project_created', handleProjectSync);
+
+    return () => {
+      window.removeEventListener('jh_challenge_created', handleChallengeSync);
+      window.removeEventListener('jh_challenge_updated', handleChallengeSync);
+      window.removeEventListener('jh_project_created', handleProjectSync);
+    };
   }, [currentUser]);
 
   return (
@@ -62,6 +79,16 @@ export const StudentDashboard: React.FC = () => {
             Build solutions for genuine grassroots problems, earn state Innovation Points, and qualify for incubation grants.
           </p>
         </div>
+        <Button
+          size="sm"
+          onClick={() => {
+            setSelectedChallengeForProject('');
+            setIsProjectModalOpen(true);
+          }}
+          className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs gap-1.5 cursor-pointer self-start sm:self-auto shadow-xs"
+        >
+          <Plus className="w-4 h-4" /> Submit Innovation Project
+        </Button>
       </div>
 
       {/* 4 Stats Cards (Real Data) */}
@@ -182,9 +209,23 @@ export const StudentDashboard: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/60 text-xs">
                     <span className="text-slate-500 font-medium">📍 {c.district}{c.village ? `, ${c.village}` : ''}</span>
-                    <span className="text-emerald-600 font-semibold flex items-center gap-1 group-hover:underline">
-                      <Lightbulb className="w-3.5 h-3.5" /> View Challenge
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 text-[11px] px-2 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800 hover:bg-purple-50 cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedChallengeForProject(c.id);
+                          setIsProjectModalOpen(true);
+                        }}
+                      >
+                        <FolderPlus className="w-3 h-3 mr-1" /> Propose Solution
+                      </Button>
+                      <span className="text-emerald-600 font-semibold flex items-center gap-1 group-hover:underline">
+                        <Lightbulb className="w-3.5 h-3.5" /> View
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -192,6 +233,13 @@ export const StudentDashboard: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      <SubmitProjectModal
+        isOpen={isProjectModalOpen}
+        onClose={() => setIsProjectModalOpen(false)}
+        initialChallengeId={selectedChallengeForProject}
+        onProjectCreated={() => loadStudentData()}
+      />
     </div>
   );
 };
