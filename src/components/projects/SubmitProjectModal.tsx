@@ -144,7 +144,7 @@ export const SubmitProjectModal: React.FC<SubmitProjectModalProps> = ({
               <select
                 value={selectedChallengeId}
                 onChange={(e) => handleChallengeChange(e.target.value)}
-                className="w-full h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs"
+                className="w-full h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 px-3 text-xs"
               >
                 <option value="">-- Standalone Innovation Project (No linked challenge) --</option>
                 {challenges.map((c) => (
@@ -174,7 +174,7 @@ export const SubmitProjectModal: React.FC<SubmitProjectModalProps> = ({
                 <select
                   value={universityId}
                   onChange={(e) => setUniversityId(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs"
+                  className="w-full h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 px-3 text-xs"
                 >
                   {JHARKHAND_UNIVERSITIES.map((u) => (
                     <option key={u.id} value={u.id}>
@@ -223,7 +223,7 @@ export const SubmitProjectModal: React.FC<SubmitProjectModalProps> = ({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe how the student engineering team will build and pilot this solution..."
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2.5 text-xs focus:ring-1 focus:ring-emerald-500"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2.5 text-xs focus:ring-1 focus:ring-emerald-500"
               />
             </div>
 
