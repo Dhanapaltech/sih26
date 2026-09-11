@@ -1,10 +1,10 @@
-﻿-- ==============================================================================
+-- ==============================================================================
 -- Jharkhand Innovation Hub - Complete One-Click Database Setup
 -- File: supabase/EASY_SETUP.sql
 -- ==============================================================================
 
 -- 1. EXTENSIONS & SEQUENCES
-CREATE EXTENSION IF NOT EXISTS uuid-ossp;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE SEQUENCE IF NOT EXISTS challenge_code_seq START 100;
