@@ -1,0 +1,17 @@
+{
+  "short_name": "JH Innovate",
+  "name": "Jharkhand Innovation Hub - Citizen App",
+  "description": "From Local Problems to Real Solutions. Report community issues directly to universities and government.",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": "/citizen",
+  "background_color": "#064e3b",
+  "theme_color": "#064e3b",
+  "display": "standalone",
+  "orientation": "portrait"
+}
